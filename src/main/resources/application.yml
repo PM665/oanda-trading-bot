@@ -2,7 +2,6 @@ org.pminin.bot:
 
   account:
     name: pm665
-    enabled: true
     accountId: "101-004-2382137-004"
     url: "https://api-fxpractice.oanda.com/"
     token: "b0ad26106f56290576f0cd03bb6b8f48-e2edfec69c9326788aaf4050fdbddb8f"
@@ -13,8 +12,8 @@ org.pminin.bot:
     enabled: true
     description: One Minute Scalper Long
     trigger:
-    - previousCandle.close < bollinger.lower(previousCandle)
-    - previousCandle.close - currentPrice > pips(1.5)
+    - previousCandle.close < previousBollinger.lower
+    - previousCandle.close - currentPrice > 1.5 * pip
     - recentLongOrder.time < previousCandle.open
     direction: long
     granularity: M1
@@ -25,8 +24,8 @@ org.pminin.bot:
     enabled: false
     description: One Minute Scalper Short
     trigger:
-    - previousCandle.close > bollinger.upper(previousCandle)
-    - previousCandle.close - currentPrice > pips(1.5)
+    - previousCandle.close > previousBollinger.upper
+    - previousCandle.close - currentPrice > 1.5 * pip
     - recentShortOrder.time < previousCandle.open
     direction: short
     granularity: M1
@@ -45,13 +44,13 @@ logging:
     org.springframework.web: ERROR
     org.pminin.tradingbotpro: TRACE
 # The following properties are for trading system:
-main:
-  autostart: true
-  scheduler:
-    candle-collect.cron: 0/2 * * * * *
-    start-work.cron: 0 0 1 ? * MON
-    end-work.cron: 0 55 0 ? * SAT
-    forced-work.cron: 0 * 1-23 ? * MON-FRI
-    end-week.cron: 0 55 0 ? * SAT
-    news-check.cron: 0 45 * ? * MON-FRI
+#main:
+#  autostart: true
+#  scheduler:
+#    candle-collect.cron: 0/2 * * * * *
+#    start-work.cron: 0 0 1 ? * MON
+#    end-work.cron: 0 55 0 ? * SAT
+#    forced-work.cron: 0 * 1-23 ? * MON-FRI
+#    end-week.cron: 0 55 0 ? * SAT
+#    news-check.cron: 0 45 * ? * MON-FRI
 

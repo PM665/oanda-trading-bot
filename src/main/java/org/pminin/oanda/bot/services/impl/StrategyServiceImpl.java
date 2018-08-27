@@ -8,7 +8,11 @@ import javax.annotation.PostConstruct;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.pminin.oanda.bot.config.BotProperties.StrategyDefinition;
+import org.pminin.oanda.bot.model.StrategyContext;
 import org.pminin.oanda.bot.services.StrategyService;
+import org.springframework.expression.Expression;
+import org.springframework.expression.ExpressionParser;
+import org.springframework.expression.spel.standard.SpelExpressionParser;
 
 @Slf4j
 public class StrategyServiceImpl implements StrategyService {
@@ -72,6 +76,13 @@ public class StrategyServiceImpl implements StrategyService {
     @Override
     public double tradeAmount() {
         return 0;
+    }
+
+
+    private <T> T parseExpression(String expression, Class<T> aClass, StrategyContext context)  {
+        ExpressionParser parser = new SpelExpressionParser();
+        Expression exp = parser.parseExpression(expression);
+        return exp.getValue(context, aClass);
     }
 
 }
