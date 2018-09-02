@@ -87,7 +87,8 @@ public class ServiceRegistrar {
 
     private void registerStrategyService(StrategyDefinition strategyDefinition) {
         BeanDefinitionBuilder b = BeanDefinitionBuilder.rootBeanDefinition(StrategyServiceImpl.class)
-                .addConstructorArgValue(strategyDefinition);
+                .addConstructorArgValue(strategyDefinition)
+                .addConstructorArgReference(ACCOUNT_SERVICE_BEAN_ID);
         registerBean(STRATEGY_SERVICE_BEAN_PREFIX + strategyDefinition.getName(), b.getBeanDefinition());
     }
 

@@ -25,3 +25,4 @@
 /.nb-gradle/
 /logs/
 logs/
+/src/main/resources/application-local.yml

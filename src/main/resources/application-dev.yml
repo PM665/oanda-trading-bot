@@ -14,24 +14,28 @@ org.pminin.bot:
     trigger:
     - previousCandle.close < previousBollinger.lower
     - previousCandle.close - currentPrice > 1.5 * pip
-    - recentLongOrder.time < previousCandle.open
+    - recentOrderTime < previousCandle.time
     direction: long
     granularity: M1
     takeProfit: 0.05 * bollinger.width
     stopLoss: 0.5 * bollinger.width
     tradeAmount: 0.2 * nav
+    maPeriod: 20
+    shift: 1
   - name: OneMinuteShort
     enabled: false
     description: One Minute Scalper Short
     trigger:
     - previousCandle.close > previousBollinger.upper
     - previousCandle.close - currentPrice > 1.5 * pip
-    - recentShortOrder.time < previousCandle.open
+    - recentOrderTime < previousCandle.time
     direction: short
     granularity: M1
     takeProfit: 0.05 * bollinger.width
     stopLoss: 0.5 * bollinger.width
     tradeAmount: 0.2 * nav
+    maPeriod: 20
+    shift: 1
 
   traderOptions:
   - accountId: "101-004-2382137-004"

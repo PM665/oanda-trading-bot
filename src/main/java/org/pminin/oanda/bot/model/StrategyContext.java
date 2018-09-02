@@ -2,14 +2,17 @@ package org.pminin.oanda.bot.model;
 
 import java.util.Date;
 import lombok.Builder;
+import lombok.NonNull;
 import lombok.Value;
 
 @Value
 @Builder
 public class StrategyContext {
-
+    @NonNull
     private Candle previousCandle;
+    @NonNull
     private Bollinger previousBollinger;
+    @NonNull
     private Bollinger bollinger;
     private Date recentOrderTime;
     private double pip;
@@ -18,8 +21,8 @@ public class StrategyContext {
 
     @Value
     @Builder
-    private class Candle {
-
+    public static class Candle {
+        private Date time;
         private double open;
         private double close;
         private double low;
@@ -28,8 +31,7 @@ public class StrategyContext {
 
     @Value
     @Builder
-    private class Bollinger {
-
+    public static class Bollinger {
         private double sma;
         private double width;
         private double upper;

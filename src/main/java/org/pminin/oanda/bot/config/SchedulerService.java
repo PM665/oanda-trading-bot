@@ -20,9 +20,13 @@ public class SchedulerService {
         this.collectorServices = collectorServices;
     }
 
-    @Scheduled(fixedDelay = 2000)
+    @Scheduled(fixedDelayString = "${org.pminin.bot.collector.collectInterval}")
     public void collectTrigger() {
         collectorServices.forEach(CollectorService::collectCandles);
     }
 
+    @Scheduled(fixedDelayString = "${org.pminin.bot.collector.cutInterval}")
+    public void cutCandles() {
+        collectorServices.forEach(CollectorService::cutCandles);
+    }
 }

@@ -18,12 +18,12 @@ import java.util.List;
 import javax.annotation.PostConstruct;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
+import org.pminin.oanda.bot.model.AccountException;
 import org.pminin.oanda.bot.services.AccountService;
 import org.pminin.oanda.bot.services.CollectorService;
 import org.pminin.oanda.bot.services.TraderService;
 import org.pminin.oanda.bot.util.TechAnalysisUtils;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.scheduling.annotation.Scheduled;
 
 @Slf4j
 public class CollectorServiceImpl implements CollectorService {
@@ -37,10 +37,18 @@ public class CollectorServiceImpl implements CollectorService {
     private List<TraderService> traders;
 
     public CollectorServiceImpl(AccountService accountService, String instrument,
-            CandlestickGranularity granularity) {
+            CandlestickGranularity granularity) throws AccountException {
         this.accountService = accountService;
         this.instrument = accountService.getInstrument(instrument);
         this.granularity = granularity;
+    }
+
+    @Override
+    public void cutCandles() {
+        candles.stream()
+                .sorted(comparingLong(candle -> parseDateTime(((Candlestick) candle).getTime())).reversed())
+                .skip(MAX_HISTORY_LENGTH)
+                .forEach(candles::remove);
     }
 
     @PostConstruct
@@ -50,6 +58,7 @@ public class CollectorServiceImpl implements CollectorService {
                 instrument, granularity);
     }
 
+    @Override
     public void collectCandles() {
         try {
             InstrumentCandlesRequest req = getInstrumentCandlesRequest();
@@ -74,17 +83,15 @@ public class CollectorServiceImpl implements CollectorService {
                 .forEach(log::debug);
         candles.removeIf(candlestick -> parseDateTime(candlestick.getTime()) > candlesMaxCompleteTime);
         candles.addAll(0, sortCandles(newCandles));
-        notifyTradersIfNecessary(newCandles);
+        notifyTradersIfNecessary();
     }
 
-    private void notifyTradersIfNecessary(List<Candlestick> newCandles) {
-        if (newCandles.stream().anyMatch(Candlestick::getComplete)) {
-            log.debug("Notifying traders");
-            traders.stream()
-                    .filter(trader -> instrument.equals(trader.getInstrument()))
-                    .filter(trader -> granularity.equals(trader.getGranularity()))
-                    .forEach(trader -> trader.processCandles(candles));
-        }
+    private void notifyTradersIfNecessary() {
+        log.debug("Notifying traders");
+        traders.stream()
+                .filter(trader -> instrument.getName().equals(trader.getInstrument().getName()))
+                .filter(trader -> granularity.equals(trader.getGranularity()))
+                .forEach(trader -> trader.processCandles(candles));
     }
 
     private InstrumentCandlesRequest getInstrumentCandlesRequest() {
@@ -108,13 +115,5 @@ public class CollectorServiceImpl implements CollectorService {
     private long getMaxCompleteTime(List<Candlestick> list) {
         return list.stream().filter(Candlestick::getComplete).map(Candlestick::getTime)
                 .map(TechAnalysisUtils::parseDateTime).max(Long::compareTo).orElse(0L);
-    }
-
-    @Scheduled(fixedDelay = 10 * 60 * 1000)
-    public void cutCandles() {
-        candles.stream()
-                .sorted(comparingLong(candle -> parseDateTime(((Candlestick) candle).getTime())).reversed())
-                .skip(MAX_HISTORY_LENGTH)
-                .forEach(candles::remove);
     }
 }

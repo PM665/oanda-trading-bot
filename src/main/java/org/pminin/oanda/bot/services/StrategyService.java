@@ -3,7 +3,9 @@ package org.pminin.oanda.bot.services;
 import com.oanda.v20.instrument.Candlestick;
 import com.oanda.v20.instrument.CandlestickGranularity;
 import com.oanda.v20.primitives.Direction;
+import com.oanda.v20.primitives.Instrument;
 import java.util.List;
+import org.pminin.oanda.bot.model.AccountException;
 
 public interface StrategyService {
 
@@ -11,7 +13,8 @@ public interface StrategyService {
 
     CandlestickGranularity getGranularity();
 
-    boolean checkOpenTrigger(List<Candlestick> candles);
+    boolean checkOpenTrigger(List<Candlestick> candles, String accountId,
+            Instrument instrument) throws AccountException;
 
     double takeProfit();
 

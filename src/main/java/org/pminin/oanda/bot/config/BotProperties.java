@@ -36,6 +36,8 @@ public class BotProperties {
         private String takeProfit;
         private String stopLoss;
         private String tradeAmount;
+        private int maPeriod;
+        private int shift;
     }
 
     @Data

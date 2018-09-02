@@ -8,6 +8,7 @@ import javax.annotation.PostConstruct;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
+import org.pminin.oanda.bot.model.AccountException;
 import org.pminin.oanda.bot.services.AccountService;
 import org.pminin.oanda.bot.services.StrategyService;
 import org.pminin.oanda.bot.services.TraderService;
@@ -24,16 +25,16 @@ public class TraderServiceImpl implements TraderService {
     private final String accountId;
 
     public TraderServiceImpl(AccountService accountService, StrategyService strategyService, String instrument,
-            String accountId) {
+            String accountId) throws AccountException {
         this.accountService = accountService;
         this.strategyService = strategyService;
         this.accountId = accountId;
-        this.instrument = accountService.getInstrument(instrument);
+        this.instrument = accountService.getInstrument(instrument, accountId);
     }
 
     @PostConstruct
     public void postConstruct() {
-        log.info("Created trader bean for account {}, strategyService {}, {}", accountService.getName(),
+        log.info("Created trader bean for account {}, {}, {}", accountService.getName(),
                 strategyService.getName(), instrument.getName());
     }
 
@@ -44,20 +45,21 @@ public class TraderServiceImpl implements TraderService {
 
     @Override
     public void processCandles(List<Candlestick> candles) {
-        log.info("Processing candles ({})...", instrument.getDisplayName());
+        log.info("Processing candles ({}, {})...", instrument.getDisplayName(), strategyService.getName());
         processOpenTriggers(candles);
     }
 
 
     private void processOpenTriggers(List<Candlestick> candles) {
-        if (strategyService.checkOpenTrigger(candles)) {
-            try {
+        try {
+            if (strategyService.checkOpenTrigger(candles, accountId, instrument)) {
                 log.info("Creating {} order  ({})", strategyService.direction(), instrument.getName());
-                accountService.createOrder(instrument, strategyService.tradeAmount(), strategyService.takeProfit(),
-                        strategyService.stopLoss());
-            } catch (Exception e) {
-                log.error("Cannot create order with unexpected exception ({})", instrument.getDisplayName(), e);
+                accountService
+                        .createOrder(accountId, instrument, strategyService.tradeAmount(), strategyService.takeProfit(),
+                                strategyService.stopLoss());
             }
+        } catch (AccountException e) {
+            log.error("Could not check trigger for opening trade due to an error", e);
         }
     }
 

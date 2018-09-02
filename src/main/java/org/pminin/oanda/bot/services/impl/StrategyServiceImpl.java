@@ -1,14 +1,18 @@
 package org.pminin.oanda.bot.services.impl;
 
+import static org.pminin.oanda.bot.util.StrategyContextUtils.createContext;
+
 import com.oanda.v20.instrument.Candlestick;
 import com.oanda.v20.instrument.CandlestickGranularity;
 import com.oanda.v20.primitives.Direction;
+import com.oanda.v20.primitives.Instrument;
 import java.util.List;
 import javax.annotation.PostConstruct;
-import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.pminin.oanda.bot.config.BotProperties.StrategyDefinition;
+import org.pminin.oanda.bot.model.AccountException;
 import org.pminin.oanda.bot.model.StrategyContext;
+import org.pminin.oanda.bot.services.AccountService;
 import org.pminin.oanda.bot.services.StrategyService;
 import org.springframework.expression.Expression;
 import org.springframework.expression.ExpressionParser;
@@ -17,72 +21,66 @@ import org.springframework.expression.spel.standard.SpelExpressionParser;
 @Slf4j
 public class StrategyServiceImpl implements StrategyService {
 
-    private final String name;
-    private final List<String> trigger;
-    private final Direction direction;
-    private final String takeProfit;
-    private final String stopLoss;
-    private final String tradeAmount;
-    @Getter
-    private final CandlestickGranularity granularity;
+    private final AccountService accountService;
+    private StrategyDefinition definition;
+    private StrategyContext context;
 
-    public StrategyServiceImpl(StrategyDefinition strategyDefinition) {
-        name = strategyDefinition.getName();
-        this.trigger = strategyDefinition.getTrigger();
-        this.direction = strategyDefinition.getDirection();
-        this.takeProfit = strategyDefinition.getTakeProfit();
-        this.stopLoss = strategyDefinition.getStopLoss();
-        this.tradeAmount = strategyDefinition.getTradeAmount();
-        this.granularity = strategyDefinition.getGranularity();
+    public StrategyServiceImpl(StrategyDefinition strategyDefinition,
+            AccountService accountService) {
+        definition = strategyDefinition;
+        this.accountService = accountService;
     }
 
     @PostConstruct
     public void postConstruct() {
-        log.info("Created strategy bean {}", name);
+        log.info("Created strategy bean {}", definition.getName());
     }
 
     @Override
     public String getName() {
-        return null;
+        return definition.getName();
     }
 
     @Override
-    public boolean checkOpenTrigger(List<Candlestick> candles) {
-        // create context
-        // check each expression
-        // return true if all of them are true
-        return false;
+    public CandlestickGranularity getGranularity() {
+        return definition.getGranularity();
+    }
+
+    @Override
+    public boolean checkOpenTrigger(List<Candlestick> candles, String accountId,
+            Instrument instrument) throws AccountException {
+        context = createContext(accountService, accountId, candles, instrument, definition);
+        return definition.getTrigger().stream()
+                .map(trigger -> parseExpression(trigger, Boolean.class))
+                .reduce(true, (a, b) -> a && b);
     }
 
     @Override
     public double takeProfit() {
-        // create context
-        // calculate the value
-        return 0;
+        return parseExpression(definition.getTakeProfit(), Double.class);
     }
 
     @Override
     public double stopLoss() {
-        // create context
-        // calculate the value
-        return 0;
-    }
-
-    @Override
-    public Direction direction() {
-        return null;
+        return parseExpression(definition.getStopLoss(), Double.class);
     }
 
     @Override
     public double tradeAmount() {
-        return 0;
+        return parseExpression(definition.getTradeAmount(), Double.class);
+    }
+
+    @Override
+    public Direction direction() {
+        return definition.getDirection();
     }
 
 
-    private <T> T parseExpression(String expression, Class<T> aClass, StrategyContext context)  {
+    private <T> T parseExpression(String expression, Class<T> aClass) {
         ExpressionParser parser = new SpelExpressionParser();
         Expression exp = parser.parseExpression(expression);
         return exp.getValue(context, aClass);
     }
+
 
 }
