@@ -1,11 +1,8 @@
 org.pminin.bot:
 
-  account:
-    name: pm665
-    accountId: "101-004-2382137-004"
-    url: "https://api-fxpractice.oanda.com/"
-    token: "b0ad26106f56290576f0cd03bb6b8f48-e2edfec69c9326788aaf4050fdbddb8f"
-
+  collector:
+    collectInterval: 10000
+    cutInterval: 600000
 
   strategies:
   - name: OneMinuteLong
@@ -17,13 +14,13 @@ org.pminin.bot:
     - recentOrderTime < previousCandle.time
     direction: long
     granularity: M1
-    takeProfit: 0.05 * bollinger.width
-    stopLoss: 0.5 * bollinger.width
+    takeProfit: currentPrice + 0.05 * bollinger.width
+    stopLoss: currentPrice - 0.5 * bollinger.width
     tradeAmount: 0.2 * nav
     maPeriod: 20
     shift: 1
   - name: OneMinuteShort
-    enabled: false
+    enabled: true
     description: One Minute Scalper Short
     trigger:
     - previousCandle.close > previousBollinger.upper
@@ -31,22 +28,35 @@ org.pminin.bot:
     - recentOrderTime < previousCandle.time
     direction: short
     granularity: M1
-    takeProfit: 0.05 * bollinger.width
-    stopLoss: 0.5 * bollinger.width
+    takeProfit: currentPrice + 0.05 * bollinger.width
+    stopLoss: currentPrice - 0.5 * bollinger.width
     tradeAmount: 0.2 * nav
     maPeriod: 20
     shift: 1
-
-  traderOptions:
-  - accountId: "101-004-2382137-004"
-    traders:
-      AUD_CAD: [OneMinuteLong, OneMinuteShort]
 
 logging.path: ./logs
 logging:
   level:
     org.springframework.web: ERROR
-    org.pminin.tradingbotpro: TRACE
+    org.pminin.oanda.bot: INFO
+
+#  account:
+#    name: pm665
+#    accountId: "holder"
+#    url: "https://api-fxpractice.oanda.com/"
+#    token: "holder"
+#
+#
+#  traderOptions:
+#  - accountId: "holder"
+#    traders:
+#      USD_CAD: [OneMinuteLong, OneMinuteShort]
+#      EUR_JPY: [OneMinuteLong, OneMinuteShort]
+#  - accountId: "holder"
+#    traders:
+#      EUR_GBP: [OneMinuteLong, OneMinuteShort]
+#      USD_CHF: [OneMinuteLong, OneMinuteShort]
+
 # The following properties are for trading system:
 #main:
 #  autostart: true
