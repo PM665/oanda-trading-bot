@@ -50,6 +50,7 @@ public class StrategyServiceImpl implements StrategyService {
     public boolean checkOpenTrigger(List<Candlestick> candles, String accountId,
             Instrument instrument) throws AccountException {
         context = createContext(accountService, accountId, candles, instrument, definition);
+        log.info( "Context for {} {}: \n{}", accountId, instrument, context);
         return definition.getTrigger().stream()
                 .map(trigger -> parseExpression(trigger, Boolean.class))
                 .reduce(true, (a, b) -> a && b);

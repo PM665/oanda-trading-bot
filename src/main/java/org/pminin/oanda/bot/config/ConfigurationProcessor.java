@@ -1,7 +1,6 @@
 package org.pminin.oanda.bot.config;
 
 import lombok.extern.slf4j.Slf4j;
-import org.pminin.oanda.bot.model.AccountException;
 import org.pminin.oanda.bot.services.AccountService;
 import org.pminin.oanda.bot.services.ServiceRegistrar;
 import org.pminin.oanda.bot.services.impl.AccountServiceImpl;
@@ -17,7 +16,7 @@ import org.springframework.scheduling.annotation.EnableScheduling;
 public class ConfigurationProcessor {
 
     @Bean
-    public AccountService accountService(BotProperties botProperties) throws AccountException {
+    public AccountService accountService(BotProperties botProperties) {
         return new AccountServiceImpl(botProperties.getAccount());
     }
 

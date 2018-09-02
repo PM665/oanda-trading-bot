@@ -12,6 +12,7 @@ import com.oanda.v20.primitives.Instrument;
 import java.util.Date;
 import java.util.List;
 import java.util.Optional;
+import lombok.extern.slf4j.Slf4j;
 import org.pminin.oanda.bot.config.BotProperties.StrategyDefinition;
 import org.pminin.oanda.bot.model.AccountException;
 import org.pminin.oanda.bot.model.StrategyContext;
@@ -20,10 +21,15 @@ import org.pminin.oanda.bot.model.StrategyContext.Candle;
 import org.pminin.oanda.bot.model.StrategyContext.Candle.CandleBuilder;
 import org.pminin.oanda.bot.services.AccountService;
 
+@Slf4j
 public class StrategyContextUtils {
+
+    private StrategyContextUtils() {
+    }
 
     public static StrategyContext createContext(AccountService accountService, String accountId,
             List<Candlestick> candles, Instrument instrument, StrategyDefinition definition) throws AccountException {
+
         Bollinger bollinger = bollinger(candles, definition);
         Bollinger prevBollinger = bollinger(candles, definition);
         double currentPrice = currentPrice(candles, definition.getDirection());
@@ -36,8 +42,13 @@ public class StrategyContextUtils {
                 .previousCandle(prevCandle)
                 .pip(pip(instrument))
                 .nav(nav(accountService, accountId))
-                .recentOrderTime(accountService.recentOrderTime(accountId, instrument, definition.getDirection()))
+                .recentOrderTime(recentOrderTime(accountService, accountId, instrument, definition))
                 .build();
+    }
+
+    private static Date recentOrderTime(AccountService accountService, String accountId, Instrument instrument,
+            StrategyDefinition definition) throws AccountException {
+        return accountService.recentOrderTime(accountId, instrument, definition.getDirection());
     }
 
     private static double nav(AccountService accountService, String accountId) throws AccountException {

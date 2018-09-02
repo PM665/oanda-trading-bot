@@ -3,6 +3,7 @@ package org.pminin.oanda.bot.services.impl;
 import com.oanda.v20.instrument.Candlestick;
 import com.oanda.v20.instrument.CandlestickGranularity;
 import com.oanda.v20.primitives.Instrument;
+import com.oanda.v20.trade.TradeID;
 import java.util.List;
 import javax.annotation.PostConstruct;
 import lombok.Getter;
@@ -54,9 +55,20 @@ public class TraderServiceImpl implements TraderService {
         try {
             if (strategyService.checkOpenTrigger(candles, accountId, instrument)) {
                 log.info("Creating {} order  ({})", strategyService.direction(), instrument.getName());
-                accountService
-                        .createOrder(accountId, instrument, strategyService.tradeAmount(), strategyService.takeProfit(),
-                                strategyService.stopLoss());
+
+                double tradeAmount =
+                        accountService.unitPrice(accountId, instrument, strategyService.direction()) * strategyService
+                                .tradeAmount();
+                double unitsAvailable = accountService
+                        .accountUnitsAvailable(accountId, instrument, strategyService.direction());
+                if (tradeAmount <= unitsAvailable) {
+                    TradeID newOrder = accountService
+                            .createOrder(accountId, instrument, tradeAmount, strategyService.takeProfit(),
+                                    strategyService.stopLoss());
+                    log.info("Created order {}", newOrder);
+                } else {
+                    log.info("Not enough units to open a trade ({} > {})", tradeAmount, unitsAvailable);
+                }
             }
         } catch (AccountException e) {
             log.error("Could not check trigger for opening trade due to an error", e);
