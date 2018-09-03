@@ -28,8 +28,8 @@ org.pminin.bot:
     - recentOrderTime < previousCandle.time
     direction: short
     granularity: M1
-    takeProfit: currentPrice + 0.05 * bollinger.width
-    stopLoss: currentPrice - 0.5 * bollinger.width
+    takeProfit: currentPrice - 0.05 * bollinger.width
+    stopLoss: currentPrice + 0.5 * bollinger.width
     tradeAmount: 0.2 * nav
     maPeriod: 20
     shift: 1

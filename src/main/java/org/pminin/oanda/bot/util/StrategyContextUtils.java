@@ -83,11 +83,13 @@ public class StrategyContextUtils {
         double sma = sma(definition.getDirection(), candles, definition.getMaPeriod(), definition.getShift());
         double deviation = deviation(definition.getDirection(), candles, sma, definition.getMaPeriod(),
                 definition.getShift());
+        double lower = sma - 2 * deviation;
+        double upper = sma + 2 * deviation;
         return Bollinger.builder()
                 .sma(sma)
-                .lower(sma - deviation)
-                .upper(sma + deviation)
-                .width(deviation * 2 / sma)
+                .lower(lower)
+                .upper(upper)
+                .width((upper - lower) / sma)
                 .build();
     }
 
