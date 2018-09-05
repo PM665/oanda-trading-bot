@@ -2,8 +2,10 @@ package org.pminin.oanda.bot.services.impl;
 
 import com.oanda.v20.instrument.Candlestick;
 import com.oanda.v20.instrument.CandlestickGranularity;
+import com.oanda.v20.primitives.Direction;
 import com.oanda.v20.primitives.Instrument;
 import com.oanda.v20.trade.TradeID;
+import java.util.Date;
 import java.util.List;
 import javax.annotation.PostConstruct;
 import lombok.Getter;
@@ -24,6 +26,7 @@ public class TraderServiceImpl implements TraderService {
     private final Instrument instrument;
     @Getter
     private final String accountId;
+    private Date recentTradeDate = new Date(0);
 
     public TraderServiceImpl(AccountService accountService, StrategyService strategyService, String instrument,
             String accountId) throws AccountException {
@@ -46,28 +49,35 @@ public class TraderServiceImpl implements TraderService {
 
     @Override
     public void processCandles(List<Candlestick> candles) {
-        log.info("Processing candles ({}, {})...", instrument.getDisplayName(), strategyService.getName());
+        log.debug("Processing candles ({}, {})...", instrument.getDisplayName(), strategyService.getName());
         processOpenTriggers(candles);
     }
 
 
     private void processOpenTriggers(List<Candlestick> candles) {
         try {
-            if (strategyService.checkOpenTrigger(candles, accountId, instrument)) {
-                log.info("Creating {} order  ({})", strategyService.direction(), instrument.getName());
+            if (strategyService.checkOpenTrigger(candles, accountId, instrument, recentTradeDate)) {
+                log.info("Context for {} {}: \n{}", accountId, instrument, strategyService.getContext());
 
-                double tradeAmount =
-                        accountService.unitPrice(accountId, instrument, strategyService.direction()) * strategyService
-                                .tradeAmount();
-                double unitsAvailable = accountService
-                        .accountUnitsAvailable(accountId, instrument, strategyService.direction());
-                if (tradeAmount <= unitsAvailable) {
+                Direction direction = strategyService.direction();
+                log.info("Creating {} order  ({})", direction, instrument.getName());
+
+                long maxTradesOpen = strategyService.getMaxTradesOpen();
+                Long openTradeCount = accountService.getAccount(accountId).getOpenTradeCount();
+                double unitsAvailable = accountService.accountUnitsAvailable(accountId, instrument, direction);
+                long tradesAvailable = maxTradesOpen - openTradeCount;
+                if (tradesAvailable > 0) {
+                    double tradeAmount = unitsAvailable / tradesAvailable;
+
+                    double takeProfit = strategyService.takeProfit();
+                    double stopLoss = strategyService.stopLoss();
                     TradeID newOrder = accountService
-                            .createOrder(accountId, instrument, tradeAmount, strategyService.takeProfit(),
-                                    strategyService.stopLoss());
+                            .createOrder(accountId, instrument, tradeAmount, takeProfit,
+                                    stopLoss);
+                    recentTradeDate = new Date();
                     log.info("Created order {}", newOrder);
                 } else {
-                    log.info("Not enough units to open a trade ({} > {})", tradeAmount, unitsAvailable);
+                    log.info("Maximum number of trades were opened ({})", maxTradesOpen);
                 }
             }
         } catch (AccountException e) {

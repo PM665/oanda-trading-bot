@@ -35,7 +35,7 @@ public class BotProperties {
         private CandlestickGranularity granularity;
         private String takeProfit;
         private String stopLoss;
-        private String tradeAmount;
+        private int maxTradesOpen;
         private int maPeriod;
         private int shift;
     }

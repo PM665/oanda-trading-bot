@@ -28,7 +28,8 @@ public class StrategyContextUtils {
     }
 
     public static StrategyContext createContext(AccountService accountService, String accountId,
-            List<Candlestick> candles, Instrument instrument, StrategyDefinition definition) throws AccountException {
+            List<Candlestick> candles, Instrument instrument, StrategyDefinition definition,
+            Date recentTradeDate) throws AccountException {
 
         Bollinger bollinger = bollinger(candles, definition);
         Bollinger prevBollinger = bollinger(candles, definition);
@@ -42,13 +43,8 @@ public class StrategyContextUtils {
                 .previousCandle(prevCandle)
                 .pip(pip(instrument))
                 .nav(nav(accountService, accountId))
-                .recentOrderTime(recentOrderTime(accountService, accountId, instrument, definition))
+                .recentOrderTime(recentTradeDate)
                 .build();
-    }
-
-    private static Date recentOrderTime(AccountService accountService, String accountId, Instrument instrument,
-            StrategyDefinition definition) throws AccountException {
-        return accountService.recentOrderTime(accountId, instrument, definition.getDirection());
     }
 
     private static double nav(AccountService accountService, String accountId) throws AccountException {
@@ -89,7 +85,7 @@ public class StrategyContextUtils {
                 .sma(sma)
                 .lower(lower)
                 .upper(upper)
-                .width((upper - lower) / sma)
+                .width((upper - lower))
                 .build();
     }
 

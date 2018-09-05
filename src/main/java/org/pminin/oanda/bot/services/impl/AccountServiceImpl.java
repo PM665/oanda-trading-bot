@@ -1,7 +1,6 @@
 package org.pminin.oanda.bot.services.impl;
 
-import static com.oanda.v20.primitives.Direction.LONG;
-import static com.oanda.v20.primitives.Direction.SHORT;
+import static java.lang.Math.toIntExact;
 import static java.util.Collections.emptyList;
 import static java.util.Collections.singletonList;
 
@@ -16,16 +15,19 @@ import com.oanda.v20.account.AccountProperties;
 import com.oanda.v20.order.MarketOrderRequest;
 import com.oanda.v20.order.OrderCreateRequest;
 import com.oanda.v20.order.OrderCreateResponse;
+import com.oanda.v20.order.UnitsAvailable;
+import com.oanda.v20.order.UnitsAvailableDetails;
 import com.oanda.v20.pricing.ClientPrice;
 import com.oanda.v20.primitives.AcceptDatetimeFormat;
+import com.oanda.v20.primitives.DecimalNumber;
 import com.oanda.v20.primitives.Direction;
 import com.oanda.v20.primitives.Instrument;
 import com.oanda.v20.trade.TradeID;
-import com.oanda.v20.trade.TradeSummary;
 import com.oanda.v20.transaction.OrderFillTransaction;
 import com.oanda.v20.transaction.StopLossDetails;
 import com.oanda.v20.transaction.TakeProfitDetails;
-import java.util.Date;
+import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -35,7 +37,6 @@ import org.apache.http.impl.client.HttpClients;
 import org.pminin.oanda.bot.config.BotProperties.AccountDefinition;
 import org.pminin.oanda.bot.model.AccountException;
 import org.pminin.oanda.bot.services.AccountService;
-import org.pminin.oanda.bot.util.TechAnalysisUtils;
 
 @Slf4j
 @Value
@@ -60,7 +61,7 @@ public class AccountServiceImpl implements AccountService {
         return getInstrument(instrumentStr, mainAccountId);
     }
 
-        @Override
+    @Override
     public Instrument getInstrument(String instrumentStr, String accountId) throws AccountException {
         AccountID accountID = getAccountID(accountId);
         return instrumentsMap.getOrDefault(accountID, emptyList()).stream()
@@ -77,14 +78,15 @@ public class AccountServiceImpl implements AccountService {
             AccountID accountID = getAccountID(accountId);
             OrderCreateRequest request = new OrderCreateRequest(accountID);
             TakeProfitDetails tp = new TakeProfitDetails()
-                    .setPrice(tpPrice);
+                    .setPrice(round(tpPrice, 1 - instrument.getPipLocation()));
             StopLossDetails sl = new StopLossDetails()
-                    .setPrice(slPrice);
+                    .setPrice(round(slPrice, 1 - instrument.getPipLocation()));
             MarketOrderRequest marketorderrequest = new MarketOrderRequest()
                     .setInstrument(instrument.getName())
-                    .setUnits(units)
+                    .setUnits(round(units, instrument.getTradeUnitsPrecision()))
                     .setStopLossOnFill(sl)
                     .setTakeProfitOnFill(tp);
+            log.info("Prepared market order: {}", marketorderrequest);
             request.setOrder(marketorderrequest);
             // Execute the request and obtain the response object
             OrderCreateResponse response = ctx.order.create(request);
@@ -92,7 +94,9 @@ public class AccountServiceImpl implements AccountService {
             OrderFillTransaction transaction = response.getOrderFillTransaction();
             // Extract the trade ID of the created trade from the transaction and keep it for future action
             return transaction.getTradeOpened().getTradeID();
-        } catch (ExecuteException | RequestException e) {
+        } catch (RequestException e) {
+            throw new AccountException(e.getErrorMessage(), e);
+        } catch (ExecuteException e) {
             throw new AccountException("Cannot create order", e);
         }
     }
@@ -100,40 +104,21 @@ public class AccountServiceImpl implements AccountService {
     @Override
     public double accountUnitsAvailable(String accountId, Instrument instrument, Direction direction)
             throws AccountException {
-        double available = getAccount(accountId).getMarginAvailable().doubleValue();
-        return available * unitPrice(accountId, instrument, direction);
-    }
-
-    @Override
-    public double unitPrice(String accountId, Instrument instrument, Direction direction) throws AccountException {
-        try {        AccountID accountID = getAccountID(accountId);
+        try {
+            AccountID accountID = getAccountID(accountId);
 
             return ctx.pricing.get(accountID, singletonList(instrument.getName()))
                     .getPrices().stream()
                     .filter(price -> price.getInstrument().equals(instrument.getName()))
                     .findFirst()
-                    .map(ClientPrice::getQuoteHomeConversionFactors)
-                    .map(factor ->
-                            direction == LONG ?
-                                    factor.getPositiveUnits().doubleValue() :
-                                    factor.getNegativeUnits().doubleValue())
+                    .map(ClientPrice::getUnitsAvailable)
+                    .map(UnitsAvailable::getOpenOnly)
+                    .map(UnitsAvailableDetails::getLong)
+                    .map(DecimalNumber::doubleValue)
                     .orElse(0.);
         } catch (ExecuteException | RequestException e) {
             throw new AccountException("Cannot calculate unit price", e);
         }
-    }
-
-    @Override
-    public Date recentOrderTime(String accountId, Instrument instrument, Direction direction) throws AccountException {
-        return getAccount(accountId).getTrades().stream()
-                .filter(trade -> trade.getInstrument().equals(instrument.getName()))
-                .filter(trade -> direction == SHORT && trade.getInitialUnits().doubleValue() < 0)
-                .map(TradeSummary::getOpenTime)
-                .map(TechAnalysisUtils::parseDateTime)
-                .max(Long::compareTo)
-                .map(Date::new)
-                .orElse(new Date(0));
-
     }
 
     @Override
@@ -151,6 +136,16 @@ public class AccountServiceImpl implements AccountService {
         } catch (ExecuteException | RequestException e) {
             throw new AccountException("Cannot get account info", e);
         }
+    }
+
+    private double round(double value, long places) {
+        if (places < 0) {
+            throw new IllegalArgumentException();
+        }
+
+        BigDecimal bd = BigDecimal.valueOf(value);
+        bd = bd.setScale(toIntExact(places), RoundingMode.HALF_UP);
+        return bd.doubleValue();
     }
 
     private AccountID getAccountID(String accountId) throws AccountException {

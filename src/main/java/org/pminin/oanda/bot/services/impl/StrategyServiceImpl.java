@@ -6,8 +6,10 @@ import com.oanda.v20.instrument.Candlestick;
 import com.oanda.v20.instrument.CandlestickGranularity;
 import com.oanda.v20.primitives.Direction;
 import com.oanda.v20.primitives.Instrument;
+import java.util.Date;
 import java.util.List;
 import javax.annotation.PostConstruct;
+import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.pminin.oanda.bot.config.BotProperties.StrategyDefinition;
 import org.pminin.oanda.bot.model.AccountException;
@@ -23,6 +25,7 @@ public class StrategyServiceImpl implements StrategyService {
 
     private final AccountService accountService;
     private StrategyDefinition definition;
+    @Getter
     private StrategyContext context;
 
     public StrategyServiceImpl(StrategyDefinition strategyDefinition,
@@ -48,9 +51,8 @@ public class StrategyServiceImpl implements StrategyService {
 
     @Override
     public boolean checkOpenTrigger(List<Candlestick> candles, String accountId,
-            Instrument instrument) throws AccountException {
-        context = createContext(accountService, accountId, candles, instrument, definition);
-        log.info( "Context for {} {}: \n{}", accountId, instrument, context);
+            Instrument instrument, Date recentTradeDate) throws AccountException {
+        context = createContext(accountService, accountId, candles, instrument, definition, recentTradeDate);
         return definition.getTrigger().stream()
                 .map(trigger -> parseExpression(trigger, Boolean.class))
                 .reduce(true, (a, b) -> a && b);
@@ -67,15 +69,13 @@ public class StrategyServiceImpl implements StrategyService {
     }
 
     @Override
-    public double tradeAmount() {
-        return parseExpression(definition.getTradeAmount(), Double.class);
-    }
-
-    @Override
     public Direction direction() {
         return definition.getDirection();
     }
 
+    public int getMaxTradesOpen() {
+        return definition.getMaxTradesOpen();
+    }
 
     private <T> T parseExpression(String expression, Class<T> aClass) {
         ExpressionParser parser = new SpelExpressionParser();

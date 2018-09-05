@@ -1,11 +1,12 @@
 org.pminin.bot:
 
   collector:
-    collectInterval: 10000
+    collectInterval: 2000
     cutInterval: 600000
 
   strategies:
   - name: OneMinuteLong
+    strategyClass: org.pminin.oanda.bot.services.impl.StrategyServiceImpl
     enabled: true
     description: One Minute Scalper Long
     trigger:
@@ -16,10 +17,11 @@ org.pminin.bot:
     granularity: M1
     takeProfit: currentPrice + 0.05 * bollinger.width
     stopLoss: currentPrice - 0.5 * bollinger.width
-    tradeAmount: 0.2 * nav
+    maxTradesOpen: 5
     maPeriod: 20
     shift: 1
   - name: OneMinuteShort
+    strategyClass: org.pminin.oanda.bot.services.impl.StrategyServiceImpl
     enabled: true
     description: One Minute Scalper Short
     trigger:
@@ -30,7 +32,7 @@ org.pminin.bot:
     granularity: M1
     takeProfit: currentPrice - 0.05 * bollinger.width
     stopLoss: currentPrice + 0.5 * bollinger.width
-    tradeAmount: 0.2 * nav
+    maxTradesOpen: 5
     maPeriod: 20
     shift: 1
 

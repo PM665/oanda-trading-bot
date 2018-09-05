@@ -5,7 +5,6 @@ import com.oanda.v20.account.Account;
 import com.oanda.v20.primitives.Direction;
 import com.oanda.v20.primitives.Instrument;
 import com.oanda.v20.trade.TradeID;
-import java.util.Date;
 import org.pminin.oanda.bot.model.AccountException;
 
 public interface AccountService {
@@ -24,9 +23,6 @@ public interface AccountService {
     double accountUnitsAvailable(String accountId, Instrument instrument, Direction direction)
             throws AccountException;
 
-    double unitPrice(String accountId, Instrument instrument, Direction direction) throws AccountException;
-
     Account getAccount(String accountId) throws AccountException;
 
-    Date recentOrderTime(String accountId, Instrument instrument, Direction direction) throws AccountException;
 }
