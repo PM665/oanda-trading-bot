@@ -55,7 +55,7 @@ public class CollectorServiceImpl implements CollectorService {
     public void postConstruct() {
         log.info("Created a collector bean with accountService '{}', instrument: {}, granularity: {}",
                 accountService.getName(),
-                instrument, granularity);
+                instrument.getName(), granularity);
     }
 
     @Override
