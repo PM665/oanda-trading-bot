@@ -14,12 +14,10 @@ import java.util.List;
 import java.util.Optional;
 import lombok.extern.slf4j.Slf4j;
 import org.pminin.oanda.bot.config.BotProperties.StrategyDefinition;
-import org.pminin.oanda.bot.model.AccountException;
 import org.pminin.oanda.bot.model.StrategyContext;
 import org.pminin.oanda.bot.model.StrategyContext.Bollinger;
 import org.pminin.oanda.bot.model.StrategyContext.Candle;
 import org.pminin.oanda.bot.model.StrategyContext.Candle.CandleBuilder;
-import org.pminin.oanda.bot.services.AccountService;
 
 @Slf4j
 public class StrategyContextUtils {
@@ -27,9 +25,9 @@ public class StrategyContextUtils {
     private StrategyContextUtils() {
     }
 
-    public static StrategyContext createContext(AccountService accountService, String accountId,
-            List<Candlestick> candles, Instrument instrument, StrategyDefinition definition,
-            Date recentTradeDate) throws AccountException {
+    public static StrategyContext createContext(List<Candlestick> candles, Instrument instrument,
+            StrategyDefinition definition,
+            Date recentTradeDate) {
 
         Bollinger bollinger = bollinger(candles, definition);
         Bollinger prevBollinger = bollinger(candles, definition);
@@ -42,13 +40,8 @@ public class StrategyContextUtils {
                 .currentPrice(currentPrice)
                 .previousCandle(prevCandle)
                 .pip(pip(instrument))
-                .nav(nav(accountService, accountId))
                 .recentOrderTime(recentTradeDate)
                 .build();
-    }
-
-    private static double nav(AccountService accountService, String accountId) throws AccountException {
-        return accountService.getAccount(accountId).getNAV().doubleValue();
     }
 
     private static Candle previousCandle(List<Candlestick> candles, Direction direction) {

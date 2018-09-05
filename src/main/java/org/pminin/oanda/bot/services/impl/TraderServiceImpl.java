@@ -1,5 +1,7 @@
 package org.pminin.oanda.bot.services.impl;
 
+import static com.oanda.v20.primitives.Direction.SHORT;
+
 import com.oanda.v20.instrument.Candlestick;
 import com.oanda.v20.instrument.CandlestickGranularity;
 import com.oanda.v20.primitives.Direction;
@@ -68,6 +70,9 @@ public class TraderServiceImpl implements TraderService {
                 long tradesAvailable = maxTradesOpen - openTradeCount;
                 if (tradesAvailable > 0) {
                     double tradeAmount = unitsAvailable / tradesAvailable;
+                    if (direction == SHORT) {
+                        tradeAmount *= -1;
+                    }
 
                     double takeProfit = strategyService.takeProfit();
                     double stopLoss = strategyService.stopLoss();

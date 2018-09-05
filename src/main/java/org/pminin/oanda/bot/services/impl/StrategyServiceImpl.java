@@ -12,9 +12,7 @@ import javax.annotation.PostConstruct;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.pminin.oanda.bot.config.BotProperties.StrategyDefinition;
-import org.pminin.oanda.bot.model.AccountException;
 import org.pminin.oanda.bot.model.StrategyContext;
-import org.pminin.oanda.bot.services.AccountService;
 import org.pminin.oanda.bot.services.StrategyService;
 import org.springframework.expression.Expression;
 import org.springframework.expression.ExpressionParser;
@@ -23,15 +21,12 @@ import org.springframework.expression.spel.standard.SpelExpressionParser;
 @Slf4j
 public class StrategyServiceImpl implements StrategyService {
 
-    private final AccountService accountService;
     private StrategyDefinition definition;
     @Getter
     private StrategyContext context;
 
-    public StrategyServiceImpl(StrategyDefinition strategyDefinition,
-            AccountService accountService) {
+    public StrategyServiceImpl(StrategyDefinition strategyDefinition) {
         definition = strategyDefinition;
-        this.accountService = accountService;
     }
 
     @PostConstruct
@@ -51,8 +46,8 @@ public class StrategyServiceImpl implements StrategyService {
 
     @Override
     public boolean checkOpenTrigger(List<Candlestick> candles, String accountId,
-            Instrument instrument, Date recentTradeDate) throws AccountException {
-        context = createContext(accountService, accountId, candles, instrument, definition, recentTradeDate);
+            Instrument instrument, Date recentTradeDate) {
+        context = createContext(candles, instrument, definition, recentTradeDate);
         return definition.getTrigger().stream()
                 .map(trigger -> parseExpression(trigger, Boolean.class))
                 .reduce(true, (a, b) -> a && b);

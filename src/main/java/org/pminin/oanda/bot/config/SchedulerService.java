@@ -3,13 +3,11 @@ package org.pminin.oanda.bot.config;
 import java.util.List;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
-import java.util.concurrent.ScheduledExecutorService;
 import lombok.extern.slf4j.Slf4j;
 import org.pminin.oanda.bot.services.CollectorService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.DependsOn;
-import org.springframework.scheduling.TaskScheduler;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 
@@ -25,7 +23,7 @@ public class SchedulerService {
         this.collectorServices = collectorServices;
     }
 
-    @Bean(destroyMethod="shutdown")
+    @Bean(destroyMethod = "shutdown")
     public Executor taskScheduler() {
         return Executors.newScheduledThreadPool(42);
     }

@@ -8,6 +8,7 @@ import lombok.Value;
 @Value
 @Builder
 public class StrategyContext {
+
     @NonNull
     private Candle previousCandle;
     @NonNull
@@ -17,11 +18,11 @@ public class StrategyContext {
     private Date recentOrderTime;
     private double pip;
     private double currentPrice;
-    private double nav;
 
     @Value
     @Builder
     public static class Candle {
+
         private Date time;
         private double open;
         private double close;
@@ -32,6 +33,7 @@ public class StrategyContext {
     @Value
     @Builder
     public static class Bollinger {
+
         private double sma;
         private double width;
         private double upper;
